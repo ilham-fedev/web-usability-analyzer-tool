@@ -71,7 +71,7 @@ export interface AnalysisResult {
     highIssues: number;
     mediumIssues: number;
     lowIssues: number;
-    recommendations: string[];
+    recommendations: (string | Recommendation)[];
   };
 }
 
