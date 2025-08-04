@@ -8,6 +8,7 @@ import {
   Smartphone, Monitor, Search, Navigation, Layers, ListTodo
 } from 'lucide-react'
 import { AnalysisResult, UsabilityCategory, ExportOptions, TodoExportOptions } from '@/types'
+import { HistoryManager } from '@/lib/history'
 
 export default function ResultsPage() {
   const router = useRouter()
@@ -20,7 +21,20 @@ export default function ResultsPage() {
     const result = localStorage.getItem('analysisResult')
     if (result) {
       try {
-        setAnalysisResult(JSON.parse(result))
+        const parsed = JSON.parse(result)
+        setAnalysisResult(parsed)
+        
+        // Save to history automatically when results are loaded (new analysis)
+        // Check if this is a fresh analysis (not from history) by checking timestamp
+        const now = new Date().getTime()
+        const resultTime = new Date(parsed.timestamp).getTime()
+        const timeDifference = now - resultTime
+        
+        // If result is recent (within 5 minutes), save to history
+        if (timeDifference < 5 * 60 * 1000) {
+          console.log('Saving fresh analysis to history')
+          HistoryManager.saveToHistory(parsed)
+        }
       } catch (error) {
         console.error('Error loading analysis result:', error)
         router.push('/')
@@ -230,7 +244,12 @@ export default function ResultsPage() {
             <div className="mb-4 lg:mb-0">
               <div className="flex items-center space-x-3 mb-2">
                 <Globe className="w-6 h-6 text-blue-600" />
-                <h1 className="text-2xl font-bold text-gray-900">Usability Analysis Results</h1>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Usability Analysis Results</h1>
+                  <p className="text-xs text-blue-600 font-medium">
+                    📚 Comprehensive analysis based on Steve Krug's "Don't Make Me Think" principles
+                  </p>
+                </div>
               </div>
               <p className="text-gray-600 break-all">{analysisResult.url}</p>
               <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
@@ -411,14 +430,26 @@ export default function ResultsPage() {
 
                     {category.details && (
                       <div className="mb-4">
-                        <h4 className="font-medium text-gray-900 mb-2">Analysis Details</h4>
-                        <p className="text-gray-700">{category.details}</p>
+                        <h4 className="font-medium text-gray-900 mb-2">
+                          📋 Analysis Details 
+                          <span className="text-xs text-gray-500 font-normal ml-2">
+                            (Based on HTML structure & content analysis)
+                          </span>
+                        </h4>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <p className="text-gray-700">{category.details}</p>
+                        </div>
                       </div>
                     )}
 
                     {category.issues && category.issues.length > 0 && (
                       <div className="mb-4">
-                        <h4 className="font-medium text-gray-900 mb-2">Issues Found ({category.issues.length})</h4>
+                        <h4 className="font-medium text-gray-900 mb-2">
+                          🔍 Issues Found ({category.issues.length})
+                          <span className="text-xs text-gray-500 font-normal ml-2">
+                            (HTML structure & usability analysis)
+                          </span>
+                        </h4>
                         <div className="space-y-2">
                           {category.issues.map((issue, idx) => (
                             <div key={idx} className={`p-3 rounded border-l-4 ${
@@ -443,7 +474,14 @@ export default function ResultsPage() {
                                 </span>
                               </div>
                               {issue.element && (
-                                <div className="text-xs text-gray-600 mt-1">Element: {issue.element}</div>
+                                <div className="text-xs text-gray-600 mt-1">
+                                  Element: <code className="bg-gray-100 px-1 rounded text-xs font-mono">{issue.element}</code>
+                                </div>
+                              )}
+                              {issue.krugPrinciple && (
+                                <div className="text-xs text-blue-600 italic mt-1">
+                                  💡 Principle: {issue.krugPrinciple}
+                                </div>
                               )}
                             </div>
                           ))}
@@ -453,7 +491,12 @@ export default function ResultsPage() {
 
                     {category.recommendations && category.recommendations.length > 0 && (
                       <div>
-                        <h4 className="font-medium text-gray-900 mb-2">Recommendations</h4>
+                        <h4 className="font-medium text-gray-900 mb-2">
+                          🎯 Recommendations 
+                          <span className="text-xs text-gray-500 font-normal ml-2">
+                            (Based on "Don't Make Me Think" principles)
+                          </span>
+                        </h4>
                         <div className="space-y-2">
                           {category.recommendations.map((rec, idx) => (
                             <div key={idx} className="border-l-2 border-blue-200 pl-3">
