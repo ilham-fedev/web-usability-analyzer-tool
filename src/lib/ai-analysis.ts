@@ -97,54 +97,154 @@ export class AIAnalysisEngine {
   }
 
   private createAnalysisPrompt(url: string, crawlData: CrawlResult): string {
-    const pages = crawlData.pages.slice(0, 5) // Limit to first 5 pages for analysis
+    const pages = crawlData.pages.slice(0, 3) // Limit to first 3 pages for detailed analysis
     
     return `
-Analyze this website for usability based on Steve Krug's "Don't Make Me Think" principles.
+COMPREHENSIVE USABILITY ANALYSIS based on Steve Krug's "Don't Make Me Think" - Complete Implementation Guide
+
+You are analyzing website usability using the complete 13-chapter framework from Steve Krug's book. Analyze BOTH the HTML structure AND markdown content for each page.
 
 Website: ${url}
 Analysis Depth: ${this.settings.analysisDepth}
 Include Mobile: ${this.settings.includeMobile}
 
-Pages analyzed:
-${pages.map(page => `
-URL: ${page.url}
-Title: ${page.title}
-Content: ${page.content.slice(0, 2000)}...
-`).join('\n')}
+PAGES TO ANALYZE:
+${pages.map(page => {
+  const htmlContent = page.metadata?.htmlContent || '';
+  const markdownContent = page.metadata?.markdownContent || '';
+  
+  return `
+=== PAGE: ${page.url} ===
+TITLE: ${page.title}
 
-Please analyze the website for each of these usability categories and provide a score (0-100) and detailed feedback:
+HTML STRUCTURE (first 1500 chars):
+${htmlContent.slice(0, 1500)}...
 
-1. Navigation Clarity (20% weight) - How easy is it to find and use navigation?
-2. Content Hierarchy (18% weight) - Is there clear visual hierarchy and organization?
-3. Page Names & Breadcrumbs (15% weight) - Can users tell where they are?
-4. Search Functionality (12% weight) - Is search effective and accessible?
-5. Forms & User Input (10% weight) - Are forms user-friendly?
-${this.settings.includeMobile ? '6. Mobile Usability (10% weight) - Is it mobile-responsive?' : ''}
-7. Page Loading & Performance (8% weight) - Does it load quickly?
-8. Accessibility (5% weight) - Is it accessible to all users?
-9. Error Handling (2% weight) - Are errors handled well?
+MARKDOWN CONTENT (first 1000 chars):
+${markdownContent.slice(0, 1000)}...
 
-For each category, provide:
-- Score (0-100)
-- 2-3 specific issues found (if any) with priority level (high/medium/low)
-- 2-3 actionable recommendations
-- Brief explanation of the score
+METADATA:
+- Description: ${page.metadata?.description || 'None'}
+- OG Title: ${page.metadata?.ogTitle || 'None'}
+- Status Code: ${page.metadata?.statusCode || 'Unknown'}
+`;
+}).join('\n')}
 
-IMPORTANT: Respond ONLY with valid JSON in this exact structure:
+ANALYSIS FRAMEWORK - Apply these specific principles to the HTML and content:
+
+1. NAVIGATION CLARITY (20% weight) - Chapter 6 Principles
+HTML Analysis: Look for <nav>, <header>, navigation <ul>, menu structure, breadcrumbs
+Implementation Checks:
+- Persistent navigation elements present?
+- Site ID/logo in top-left linking to home?
+- Primary sections clearly identified?
+- Current page indicators ("you are here")?
+- Navigation hierarchy clear from HTML structure?
+
+2. CONTENT HIERARCHY (18% weight) - Chapter 3 Billboard Design
+HTML Analysis: Examine heading structure (h1-h6), semantic elements, visual organization
+Implementation Checks:
+- Proper heading hierarchy (h1 → h2 → h3)?
+- Important elements use larger/bold styling?
+- Clear visual hierarchy in HTML structure?
+- Related items grouped in containers?
+- Scannable text formatting (lists, short paragraphs)?
+
+3. PAGE NAMES & BREADCRUMBS (15% weight) - Chapter 6 Navigation
+HTML Analysis: Check for page titles, breadcrumb elements, heading structure
+Implementation Checks:
+- Every page has prominent name/title?
+- Page name matches what user clicked?
+- Breadcrumb navigation present?
+- Clear path from home to current location?
+
+4. SEARCH FUNCTIONALITY (12% weight) - Chapter 6
+HTML Analysis: Look for search forms, input elements, search placement
+Implementation Checks:
+- Search box in expected location (top-right/center)?
+- Search form properly structured?
+- Search functionality obvious and accessible?
+
+5. FORMS & USER INPUT (10% weight) - Chapter 11 Courtesy
+HTML Analysis: Examine form elements, labels, input types, validation
+Implementation Checks:
+- Form labels properly associated with inputs?
+- Required fields clearly marked?
+- Input types appropriate (email, tel, etc.)?
+- Error handling visible in HTML structure?
+- Forms ask only for necessary information?
+
+${this.settings.includeMobile ? `6. MOBILE USABILITY (10% weight) - Chapter 10
+HTML Analysis: Check for responsive elements, viewport meta, touch-friendly design
+Implementation Checks:
+- Viewport meta tag present?
+- Touch-friendly navigation (44px+ targets)?
+- Responsive design patterns in HTML?
+- Mobile-specific elements or adaptations?
+- Content prioritized for mobile?` : ''}
+
+7. PAGE LOADING & PERFORMANCE (8% weight) - Chapter 10
+HTML Analysis: Assess HTML structure efficiency, resource loading
+Implementation Checks:
+- Clean, efficient HTML structure?
+- Minimal unnecessary elements?
+- Images with proper attributes?
+- Performance-oriented HTML patterns?
+
+8. ACCESSIBILITY (5% weight) - Chapter 12
+HTML Analysis: Examine semantic HTML, ARIA attributes, accessibility features
+Implementation Checks:
+- Semantic HTML elements used (nav, main, article, etc.)?
+- Images have alt attributes?
+- Headings used correctly for structure?
+- Form labels properly associated?
+- Skip navigation links present?
+- Color not sole means of conveying information?
+
+9. ERROR HANDLING (2% weight) - Chapter 11
+HTML Analysis: Look for error messages, validation, user feedback
+Implementation Checks:
+- Error messages clear and helpful?
+- Recovery paths provided?
+- User feedback mechanisms present?
+
+STEVE KRUG'S CORE PRINCIPLES TO EVALUATE:
+✓ Chapter 1: Self-evident design - Is everything obvious at a glance?
+✓ Chapter 2: Scanning behavior - Is content optimized for scanning?
+✓ Chapter 3: Visual hierarchy - Clear importance levels?
+✓ Chapter 4: Mindless choices - Are options clear and unambiguous?
+✓ Chapter 5: Conciseness - Eliminate unnecessary words/elements?
+✓ Chapter 7: Homepage clarity - Purpose immediately clear?
+
+For each category, analyze the HTML structure AND content, then provide:
+- Score (0-100) based on implementation task completion
+- Specific HTML elements or content issues found
+- Priority level (high/medium/low) for each issue
+- Actionable recommendations tied to Krug's principles
+- Reference to specific implementation tasks from the guide
+
+RESPOND ONLY WITH VALID JSON:
 {
   "categories": [
     {
       "id": "navigation",
       "score": 85,
       "issues": [
-        {"type": "medium", "description": "Navigation menu not sticky on scroll", "element": "header nav"}
+        {
+          "type": "medium", 
+          "description": "Navigation lacks 'you are here' indicators", 
+          "element": "nav ul.main-menu",
+          "krugPrinciple": "Chapter 6: Users need to know where they are"
+        }
       ],
       "recommendations": [
-        "Make navigation sticky for better accessibility",
-        "Add visual indicators for current page"
+        {
+          "action": "Add current page highlighting to navigation menu",
+          "userTask": "Implement active state styling for current page in navigation",
+          "krugReference": "Chapter 6: Persistent navigation with location awareness"
+        }
       ],
-      "details": "Navigation is generally clear but could be improved..."
+      "details": "Navigation structure analysis based on HTML nav elements..."
     }
   ]
 }
@@ -169,7 +269,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact structure:
       },
       body: JSON.stringify({
         model: 'claude-3-sonnet-20240229',
-        max_tokens: 4000,
+        max_tokens: 8000,  // Increased for comprehensive analysis
         messages: [
           {
             role: 'user',
@@ -212,15 +312,15 @@ IMPORTANT: Respond ONLY with valid JSON in this exact structure:
         messages: [
           {
             role: 'system',
-            content: 'You are a UX expert specializing in Steve Krug\'s "Don\'t Make Me Think" principles. Analyze websites and provide detailed usability feedback in JSON format only. Do not include any explanatory text outside the JSON.'
+            content: 'You are a UX expert specializing in Steve Krug\'s "Don\'t Make Me Think" principles with deep knowledge of HTML structure analysis and web usability patterns. Analyze both HTML structure and content thoroughly, providing specific technical recommendations based on Krug\'s implementation guide. Respond in JSON format only.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        max_tokens: 4000,
-        temperature: 0.3
+        max_tokens: 8000,  // Increased for comprehensive analysis
+        temperature: 0.2  // Lower temperature for more consistent technical analysis
       })
     })
 
@@ -264,7 +364,8 @@ IMPORTANT: Respond ONLY with valid JSON in this exact structure:
         type: ['high', 'medium', 'low'].includes(issue.type) ? issue.type : 'medium',
         description: issue.description || 'No description provided',
         element: issue.element || undefined,
-        page: issue.page || undefined
+        page: issue.page || undefined,
+        krugPrinciple: issue.krugPrinciple || undefined
       }))
 
       return {
