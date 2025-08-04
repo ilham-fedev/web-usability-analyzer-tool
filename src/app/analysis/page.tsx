@@ -374,7 +374,7 @@ export default function AnalysisPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-6 py-12">
+      <main className="max-w-5xl mx-auto px-6 py-12">
         {/* URL Info */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
           <div className="flex items-center space-x-3 mb-4">
@@ -389,8 +389,8 @@ export default function AnalysisPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div className="flex gap-x-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+            <div className="flex gap-x-1">
               <span className="text-gray-500">AI Provider:</span>
               <span className="font-medium">
                 {settings?.aiProvider === "claude"
@@ -398,16 +398,22 @@ export default function AnalysisPage() {
                   : "OpenAI GPT-4"}
               </span>
             </div>
-            <div className="flex gap-x-2">
+            <div className="flex gap-x-1">
               <span className="text-gray-500">Analysis Depth:</span>
               <span className="font-medium capitalize">
                 {settings?.analysisDepth}
               </span>
             </div>
-            <div className="flex gap-x-2">
+            <div className="flex gap-x-1">
               <span className="text-gray-500">Mobile Analysis:</span>
               <span className="font-medium">
                 {settings?.includeMobile ? "Enabled" : "Disabled"}
+              </span>
+            </div>
+            <div className="flex gap-x-1">
+              <span className="text-gray-500">Stealth Mode:</span>
+              <span className="font-medium">
+                {settings?.stealthMode ? "Enabled" : "Disabled"}
               </span>
             </div>
           </div>
@@ -461,7 +467,7 @@ export default function AnalysisPage() {
 
                 {/* Connector Line */}
                 {index < steps.length - 1 && (
-                  <div className="absolute ml-2 mt-8 w-px h-8 bg-gray-200"></div>
+                  <div className="absolute !ml-2 mt-8 w-px h-8 bg-gray-200"></div>
                 )}
               </div>
             ))}
