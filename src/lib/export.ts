@@ -1,0 +1,380 @@
+import { AnalysisResult, ExportOptions } from '@/types'
+
+export class ExportManager {
+  static async exportToMarkdown(analysisResult: AnalysisResult, options: ExportOptions): Promise<void> {
+    const markdown = this.generateMarkdownReport(analysisResult, options)
+    this.downloadFile(markdown, 'text/markdown', `usability-analysis-${new Date().toISOString().split('T')[0]}.md`)
+  }
+
+  static async exportToPDF(analysisResult: AnalysisResult, options: ExportOptions): Promise<void> {
+    const html = this.generateHTMLReport(analysisResult, options)
+    
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+      throw new Error('Could not open print window. Please allow popups for this site.')
+    }
+    
+    printWindow.document.write(html)
+    printWindow.document.close()
+    
+    // Wait for content to load then trigger print
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.focus()
+        printWindow.print()
+        // Note: User will need to "Save as PDF" in the print dialog
+      }, 500)
+    }
+  }
+
+  private static downloadFile(content: string, mimeType: string, filename: string): void {
+    const blob = new Blob([content], { type: mimeType })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+  }
+
+  private static generateMarkdownReport(result: AnalysisResult, options: ExportOptions): string {
+    const date = new Date(result.timestamp).toLocaleDateString()
+    const getScoreGrade = (score: number) => {
+      if (score >= 90) return 'Excellent ✅'
+      if (score >= 80) return 'Good ✅'
+      if (score >= 70) return 'Fair ⚠️'
+      if (score >= 60) return 'Poor ⚠️'
+      return 'Critical ❌'
+    }
+
+    let markdown = `# Web Usability Analysis Report
+
+## Website Information
+- **URL:** ${result.url}
+- **Analysis Date:** ${date}
+- **AI Provider:** ${result.settings.aiProvider === 'claude' ? 'Claude (Anthropic)' : 'OpenAI GPT-4'}
+- **Analysis Depth:** ${result.settings.analysisDepth}
+- **Mobile Analysis:** ${result.settings.includeMobile ? 'Included' : 'Not Included'}
+
+## Overall Score
+**${result.overallScore}/100** - ${getScoreGrade(result.overallScore)}
+
+## Summary
+- **High Priority Issues:** ${result.summary.highIssues}
+- **Medium Priority Issues:** ${result.summary.mediumIssues}
+- **Low Priority Issues:** ${result.summary.lowIssues}
+- **Pages Analyzed:** ${result.crawlData.metadata.totalPages}
+
+`
+
+    if (options.includeRecommendations) {
+      markdown += `## Top Recommendations
+
+${result.summary.recommendations.map((rec, idx) => `${idx + 1}. ${rec}`).join('\n')}
+
+`
+    }
+
+    markdown += `## Category Scores
+
+| Category | Score | Grade |
+|----------|-------|-------|
+`
+    
+    result.categories.forEach(category => {
+      markdown += `| ${category.name} | ${category.score}/100 | ${getScoreGrade(category.score!)} |\n`
+    })
+
+    if (options.includeDetails) {
+      markdown += `\n## Detailed Analysis\n\n`
+      
+      result.categories.forEach(category => {
+        markdown += `### ${category.name} (${category.score}/100)\n\n`
+        markdown += `**Description:** ${category.description}\n\n`
+        
+        if (category.details) {
+          markdown += `**Analysis:** ${category.details}\n\n`
+        }
+
+        if (category.issues && category.issues.length > 0) {
+          markdown += `**Issues Found:**\n\n`
+          category.issues.forEach(issue => {
+            const priority = issue.type === 'high' ? '🔴 HIGH' : issue.type === 'medium' ? '🟡 MEDIUM' : '🔵 LOW'
+            markdown += `- **${priority}:** ${issue.description}\n`
+            if (issue.element) {
+              markdown += `  - Element: \`${issue.element}\`\n`
+            }
+          })
+          markdown += '\n'
+        }
+
+        if (category.recommendations && category.recommendations.length > 0) {
+          markdown += `**Recommendations:**\n\n`
+          category.recommendations.forEach(rec => {
+            markdown += `- ${rec}\n`
+          })
+          markdown += '\n'
+        }
+
+        markdown += '---\n\n'
+      })
+    }
+
+    markdown += `## About This Report
+
+This report was generated using Steve Krug's "Don't Make Me Think" usability principles. The analysis covers:
+
+- **Navigation Clarity** - How easy it is to find and use navigation
+- **Content Hierarchy** - Clear visual hierarchy and organization  
+- **Page Names & Breadcrumbs** - Can users tell where they are?
+- **Search Functionality** - Is search effective and accessible?
+- **Forms & User Input** - Are forms user-friendly?
+- **Mobile Usability** - Is it mobile-responsive? (if enabled)
+- **Page Loading & Performance** - Does it load quickly?
+- **Accessibility** - Is it accessible to all users?
+- **Error Handling** - Are errors handled well?
+
+Generated by Web Usability Analyzer Tool on ${new Date().toLocaleDateString()}
+`
+
+    return markdown
+  }
+
+  private static generateHTMLReport(result: AnalysisResult, options: ExportOptions): string {
+    const date = new Date(result.timestamp).toLocaleDateString()
+    const getScoreColor = (score: number) => {
+      if (score >= 90) return '#10b981'
+      if (score >= 80) return '#059669'
+      if (score >= 70) return '#d97706'
+      if (score >= 60) return '#ea580c'
+      return '#dc2626'
+    }
+
+    const getScoreGrade = (score: number) => {
+      if (score >= 90) return 'Excellent'
+      if (score >= 80) return 'Good'
+      if (score >= 70) return 'Fair'
+      if (score >= 60) return 'Poor'
+      return 'Critical'
+    }
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Usability Analysis Report - ${result.url}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .score-circle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+            margin: 20px 0;
+        }
+        .category {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            page-break-inside: avoid;
+        }
+        .category-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .category-score {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: white;
+        }
+        .issue {
+            margin: 10px 0;
+            padding: 12px;
+            border-left: 4px solid;
+            border-radius: 4px;
+        }
+        .issue-high {
+            background: #fef2f2;
+            border-color: #dc2626;
+            color: #991b1b;
+        }
+        .issue-medium {
+            background: #fffbeb;
+            border-color: #d97706;
+            color: #92400e;
+        }
+        .issue-low {
+            background: #eff6ff;
+            border-color: #2563eb;
+            color: #1d4ed8;
+        }
+        .recommendations {
+            background: #f0f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .stat-card {
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 28px;
+            font-weight: bold;
+            color: #1f2937;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #3b82f6;
+            transition: width 0.3s ease;
+        }
+        @media print {
+            body { margin: 0; padding: 20px; }
+            .header { page-break-after: avoid; }
+            .category { page-break-inside: avoid; margin-bottom: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔍 Web Usability Analysis Report</h1>
+        <h2>${result.url}</h2>
+        <div class="score-circle" style="background-color: ${getScoreColor(result.overallScore)}">
+            ${result.overallScore}
+        </div>
+        <div style="font-size: 18px; margin-top: 10px;">
+            Overall Score: <strong>${getScoreGrade(result.overallScore)}</strong>
+        </div>
+        <p style="color: #6b7280; margin-top: 20px;">
+            Analysis Date: ${date} | 
+            AI Provider: ${result.settings.aiProvider === 'claude' ? 'Claude (Anthropic)' : 'OpenAI GPT-4'} | 
+            Depth: ${result.settings.analysisDepth}
+        </p>
+    </div>
+
+    <div class="summary-stats">
+        <div class="stat-card">
+            <div class="stat-number" style="color: #dc2626;">${result.summary.highIssues}</div>
+            <div>High Priority Issues</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" style="color: #d97706;">${result.summary.mediumIssues}</div>
+            <div>Medium Priority Issues</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" style="color: #2563eb;">${result.summary.lowIssues}</div>
+            <div>Low Priority Issues</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" style="color: #059669;">${result.crawlData.metadata.totalPages}</div>
+            <div>Pages Analyzed</div>
+        </div>
+    </div>
+
+    ${options.includeRecommendations ? `
+    <div class="recommendations">
+        <h3>🎯 Top Recommendations</h3>
+        <ol>
+            ${result.summary.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+        </ol>
+    </div>
+    ` : ''}
+
+    <h2>📊 Category Scores</h2>
+    ${result.categories.map(category => `
+    <div class="category">
+        <div class="category-header">
+            <div>
+                <h3 style="margin: 0;">${category.name}</h3>
+                <p style="margin: 5px 0; color: #6b7280;">${category.description}</p>
+            </div>
+            <div class="category-score" style="background-color: ${getScoreColor(category.score!)}">
+                ${category.score}/100
+            </div>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: ${category.score}%"></div>
+        </div>
+
+        ${options.includeDetails && category.details ? `
+        <div style="margin: 15px 0;">
+            <strong>Analysis:</strong> ${category.details}
+        </div>
+        ` : ''}
+
+        ${category.issues && category.issues.length > 0 ? `
+        <div style="margin: 15px 0;">
+            <strong>Issues Found (${category.issues.length}):</strong>
+            ${category.issues.map(issue => `
+            <div class="issue issue-${issue.type}">
+                <strong>${issue.type.toUpperCase()}:</strong> ${issue.description}
+                ${issue.element ? `<br><small>Element: ${issue.element}</small>` : ''}
+            </div>
+            `).join('')}
+        </div>
+        ` : ''}
+
+        ${category.recommendations && category.recommendations.length > 0 ? `
+        <div style="margin: 15px 0;">
+            <strong>Recommendations:</strong>
+            <ul>
+                ${category.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+            </ul>
+        </div>
+        ` : ''}
+    </div>
+    `).join('')}
+
+    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280;">
+        <p><strong>About This Report</strong></p>
+        <p>This analysis is based on Steve Krug's "Don't Make Me Think" usability principles. 
+        Generated by Web Usability Analyzer Tool on ${new Date().toLocaleDateString()}</p>
+    </div>
+</body>
+</html>`
+  }
+}
