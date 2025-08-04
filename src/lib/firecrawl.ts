@@ -19,7 +19,7 @@ export class FirecrawlClient {
     }
 
     const scrapeOptions: any = {
-      formats: ['markdown' as const],
+      formats: ['markdown' as const, 'html' as const],  // Get both markdown and full HTML for comprehensive analysis
       onlyMainContent: false,  // Scrape entire page including nav, headers, footers for complete usability analysis
       maxAge: 14400000  // 4 hours cache for optimization
     };
@@ -51,16 +51,28 @@ export class FirecrawlClient {
     
     // Handle single page data from scrape response - data is at root level
     const responseMetadata = scrapeResponse.metadata || {};
+    
+    // Combine both markdown and HTML content for comprehensive analysis
+    const markdownContent = scrapeResponse.markdown || scrapeResponse.content || "";
+    const htmlContent = scrapeResponse.html || "";
+    
+    // Create combined content with both formats for AI analysis
+    const combinedContent = htmlContent 
+      ? `HTML Content:\n${htmlContent}\n\nMarkdown Content:\n${markdownContent}`
+      : markdownContent;
+    
     const page: PageData = {
       url: responseMetadata.sourceURL || scrapeResponse.url || url,
       title: responseMetadata.title || scrapeResponse.title || "Untitled",
-      content: scrapeResponse.markdown || scrapeResponse.content || "",
+      content: combinedContent,
       metadata: {
         description: responseMetadata.description || scrapeResponse.description,
         ogTitle: responseMetadata.ogTitle || scrapeResponse.ogTitle,
         ogDescription: responseMetadata.ogDescription || scrapeResponse.ogDescription,
         keywords: responseMetadata.keywords || scrapeResponse.keywords,
         statusCode: responseMetadata.statusCode || scrapeResponse.statusCode || 200,
+        htmlContent: htmlContent,  // Store raw HTML separately for advanced analysis
+        markdownContent: markdownContent,  // Store markdown separately
       },
     };
 
@@ -75,9 +87,12 @@ export class FirecrawlClient {
     };
 
     console.log(`Scrape completed: Single page scraped successfully`);
-    console.log(`Content length: ${page.content.length} characters`);
+    console.log(`Total content length: ${page.content.length} characters`);
+    console.log(`HTML content length: ${htmlContent.length} characters`);
+    console.log(`Markdown content length: ${markdownContent.length} characters`);
     console.log(`Page title: ${page.title}`);
-    console.log(`Content preview: ${page.content.substring(0, 200)}...`);
+    console.log(`HTML preview: ${htmlContent.substring(0, 100)}...`);
+    console.log(`Markdown preview: ${markdownContent.substring(0, 100)}...`);
     
     return { pages, metadata: crawlMetadata };
   }
@@ -88,7 +103,7 @@ export class FirecrawlClient {
       console.log('Testing Firecrawl API key...');
       
       const testOptions: any = {
-        formats: ['markdown' as const],
+        formats: ['markdown' as const, 'html' as const],  // Test both formats like main scrape
         onlyMainContent: false  // Use same option as main scrape method
       };
 

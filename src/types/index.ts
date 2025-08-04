@@ -49,6 +49,8 @@ export interface PageData {
     ogDescription?: string;
     keywords?: string;
     statusCode?: number;
+    htmlContent?: string;  // Raw HTML content for comprehensive analysis
+    markdownContent?: string;  // Markdown content for readable analysis
   };
 }
 
@@ -134,4 +136,22 @@ export interface TodoExportOptions {
   includePriority: boolean;
   includeReferences: boolean;
   groupByCategory: boolean;
+}
+
+// History Types
+export interface HistoryItem {
+  id: string;
+  url: string;
+  timestamp: Date;
+  overallScore: number;
+  summary: {
+    highIssues: number;
+    mediumIssues: number;
+    lowIssues: number;
+  };
+  resultData: AnalysisResult;
+  settings: {
+    aiProvider: string;
+    analysisDepth: string;
+  };
 }
