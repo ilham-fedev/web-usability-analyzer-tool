@@ -39,20 +39,39 @@ function generateTodoTasks(analysisResult: AnalysisResult): TodoTask[] {
   const tasks: TodoTask[] = []
   let taskId = 1
 
+  // Add a summary task showing overall strengths to maintain (positive reinforcement)
+  if (analysisResult.overallAssessment?.strengths && analysisResult.overallAssessment.strengths.length > 0) {
+    tasks.push({
+      id: `task-${taskId++}`,
+      title: `Maintain Current Strengths`,
+      description: `Your website has ${analysisResult.overallAssessment.strengths.length} key strengths that should be preserved during improvements`,
+      category: 'Overall Assessment',
+      priority: 'medium',
+      krugReference: 'Steve Krug: "If it ain\'t broke, don\'t fix it"',
+      userAction: `Continue to maintain: ${analysisResult.overallAssessment.strengths.slice(0, 3).join(', ')}${analysisResult.overallAssessment.strengths.length > 3 ? ', and others' : ''}`,
+      estimatedTime: '30 minutes review',
+      completed: false
+    })
+  }
+
   analysisResult.categories.forEach(category => {
-    // Add tasks from implementation tasks
-    if (category.implementationTasks && category.implementationTasks.length > 0) {
+    // Only add tasks from categories that have actual issues (contextual approach)
+    const hasIssues = category.issues && category.issues.length > 0
+    const categoryPriority = getContextualCategoryPriority(category)
+    
+    // Add contextual implementation tasks (only for categories with issues)
+    if (category.implementationTasks && category.implementationTasks.length > 0 && hasIssues) {
       category.implementationTasks.forEach(task => {
         const cleanTask = task.replace(/^\[\s*\]\s*/, '') // Remove checkbox prefix
         tasks.push({
           id: `task-${taskId++}`,
           title: cleanTask,
-          description: `Implementation task for ${category.name}`,
+          description: `Contextual implementation task for ${category.name} - addressing ${category.issues?.length || 0} issue(s)`,
           category: category.name,
-          priority: getTaskPriority(category, cleanTask),
+          priority: categoryPriority,
           krugReference: category.description,
           userAction: cleanTask,
-          estimatedTime: estimateTaskTime(cleanTask),
+          estimatedTime: estimateContextualTaskTime(cleanTask, category.issues?.length || 0),
           completed: false
         })
       })
@@ -112,11 +131,20 @@ function generateTodoTasks(analysisResult: AnalysisResult): TodoTask[] {
   return tasks
 }
 
+function getContextualCategoryPriority(category: any): 'high' | 'medium' | 'low' {
+  const issueCount = category.issues ? category.issues.length : 0
+  const highIssueCount = category.issues ? category.issues.filter((i: any) => i.type === 'high').length : 0
+  
+  // Prioritize based on actual issues found and category importance
+  if (highIssueCount > 0 || (issueCount >= 2 && category.weight >= 12)) return 'high'
+  if (issueCount >= 1 && category.weight >= 8) return 'medium'
+  if (issueCount > 0) return 'low'
+  
+  return 'low' // Fallback for categories without issues
+}
+
 function getTaskPriority(category: any, task: string): 'high' | 'medium' | 'low' {
-  // Higher weight categories get higher priority
-  if (category.weight >= 15) return 'high'
-  if (category.weight >= 8) return 'medium'
-  return 'low'
+  return getContextualCategoryPriority(category)
 }
 
 function getRecommendationPriority(category: any, rec: Recommendation): 'high' | 'medium' | 'low' {
@@ -132,23 +160,30 @@ function getRecommendationPriority(category: any, rec: Recommendation): 'high' |
   return 'low'
 }
 
-function estimateTaskTime(task: string): string {
+function estimateContextualTaskTime(task: string, issueCount: number): string {
   const taskLower = task.toLowerCase()
+  const complexityMultiplier = Math.min(issueCount / 2, 2) // More issues = more complexity
+  
+  let baseHours = 2
   
   if (taskLower.includes('test') || taskLower.includes('audit') || taskLower.includes('review')) {
-    return '1-2 hours'
-  }
-  if (taskLower.includes('implement') || taskLower.includes('create') || taskLower.includes('design')) {
-    return '4-8 hours'
-  }
-  if (taskLower.includes('optimize') || taskLower.includes('improve') || taskLower.includes('enhance')) {
-    return '2-4 hours'
-  }
-  if (taskLower.includes('add') || taskLower.includes('fix') || taskLower.includes('update')) {
-    return '1-3 hours'
+    baseHours = 1.5
+  } else if (taskLower.includes('implement') || taskLower.includes('create') || taskLower.includes('design')) {
+    baseHours = 6
+  } else if (taskLower.includes('optimize') || taskLower.includes('improve') || taskLower.includes('enhance')) {
+    baseHours = 3
+  } else if (taskLower.includes('add') || taskLower.includes('fix') || taskLower.includes('update')) {
+    baseHours = 2
   }
   
-  return '2-4 hours' // Default estimate
+  const adjustedHours = Math.round(baseHours * (1 + complexityMultiplier * 0.5))
+  const maxHours = Math.round(adjustedHours * 1.5)
+  
+  return `${adjustedHours}-${maxHours} hours`
+}
+
+function estimateTaskTime(task: string): string {
+  return estimateContextualTaskTime(task, 1) // Default to 1 issue for legacy calls
 }
 
 function formatTodoExport(tasks: TodoTask[], options: TodoExportOptions): any {
@@ -166,13 +201,38 @@ function formatTodoExport(tasks: TodoTask[], options: TodoExportOptions): any {
 
 function generateMarkdownTodos(tasks: TodoTask[], options: TodoExportOptions): string {
   let markdown = '# Website Usability Todo Tasks\n\n'
-  markdown += `*Generated from Steve Krug "Don't Make Me Think" analysis*\n\n`
+  markdown += `*Generated from Steve Krug "Don't Make Me Think" analysis with contextual implementation tasks*\n\n`
+  markdown += `**Note:** These tasks are specifically generated based on actual issues found on your website, not generic recommendations.\n\n`
+  
+  // Add strengths section
+  const strengthTasks = tasks.filter(t => t.category === 'Overall Assessment')
+  if (strengthTasks.length > 0) {
+    markdown += `## 🌟 Current Strengths to Maintain\n\n`
+    markdown += `Your website already does many things well! Make sure to preserve these strengths while implementing improvements:\n\n`
+    strengthTasks.forEach(task => {
+      markdown += `- ✅ **${task.title}**\n`
+      markdown += `  - ${task.userAction}\n`
+      markdown += `  - Time needed: ${task.estimatedTime}\n\n`
+    })
+  }
+  
+  markdown += `## Summary\n\n`
+  markdown += `- **Total Tasks:** ${tasks.length}\n`
+  markdown += `- **High Priority:** ${tasks.filter(t => t.priority === 'high').length}\n`
+  markdown += `- **Medium Priority:** ${tasks.filter(t => t.priority === 'medium').length}\n`
+  markdown += `- **Low Priority:** ${tasks.filter(t => t.priority === 'low').length}\n`
+  markdown += `- **Strengths to Maintain:** ${strengthTasks.length}\n\n`
   
   if (options.groupByCategory) {
     const categories = Array.from(new Set(tasks.map(t => t.category)))
     
     categories.forEach(category => {
+      // Skip the 'Overall Assessment' category since it's handled in the strengths section
+      if (category === 'Overall Assessment') return
+      
       const categoryTasks = tasks.filter(t => t.category === category)
+      if (categoryTasks.length === 0) return
+      
       markdown += `## ${category}\n\n`
       
       categoryTasks.forEach(task => {
@@ -198,7 +258,8 @@ function generateMarkdownTodos(tasks: TodoTask[], options: TodoExportOptions): s
     const priorities: ('high' | 'medium' | 'low')[] = ['high', 'medium', 'low']
     
     priorities.forEach(priority => {
-      const priorityTasks = tasks.filter(t => t.priority === priority)
+      // Filter out 'Overall Assessment' tasks since they're handled in the strengths section
+      const priorityTasks = tasks.filter(t => t.priority === priority && t.category !== 'Overall Assessment')
       if (priorityTasks.length === 0) return
       
       markdown += `## ${priority.charAt(0).toUpperCase() + priority.slice(1)} Priority Tasks\n\n`
