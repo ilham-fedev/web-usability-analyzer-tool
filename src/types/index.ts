@@ -15,9 +15,11 @@ export interface UsabilityCategory {
   weight: number;
   score?: number;
   issues?: Issue[];
+  strengths?: string[];
   recommendations?: (string | Recommendation)[];
   implementationTasks?: string[];
   details?: string;
+  assessment?: 'excellent' | 'good' | 'moderate' | 'poor';
 }
 
 export interface Issue {
@@ -67,6 +69,11 @@ export interface AnalysisResult {
   timestamp: Date;
   settings: AnalysisSettings;
   overallScore: number;
+  overallAssessment?: {
+    level: 'excellent' | 'good' | 'moderate' | 'poor';
+    message: string;
+    strengths: string[];
+  };
   categories: UsabilityCategory[];
   crawlData: CrawlResult;
   summary: {
