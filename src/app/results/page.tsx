@@ -283,6 +283,43 @@ export default function ResultsPage() {
           </div>
         </div>
 
+        {/* Overall Assessment */}
+        {analysisResult.overallAssessment && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+            <div className="flex items-start space-x-4">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <BarChart3 className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Overall Assessment</h3>
+                <p className="text-gray-700 mb-4">{analysisResult.overallAssessment.message}</p>
+                
+                {analysisResult.overallAssessment.strengths && analysisResult.overallAssessment.strengths.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-green-800 mb-2">🌟 Key Strengths</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {analysisResult.overallAssessment.strengths.map((strength, idx) => (
+                        <div key={idx} className="flex items-center space-x-2 text-sm text-green-700">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <span>{strength}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className={`px-4 py-2 rounded-full border ${
+                analysisResult.overallAssessment.level === 'excellent' ? 'bg-green-50 border-green-200 text-green-800' :
+                analysisResult.overallAssessment.level === 'good' ? 'bg-blue-50 border-blue-200 text-blue-800' :
+                analysisResult.overallAssessment.level === 'moderate' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' :
+                'bg-red-50 border-red-200 text-red-800'
+              }`}>
+                <span className="font-medium capitalize">{analysisResult.overallAssessment.level}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -389,22 +426,39 @@ export default function ResultsPage() {
                         ></div>
                       </div>
                       
-                      {category.issues && category.issues.length > 0 && (
-                        <div className="mt-3">
-                          <div className="text-sm font-medium text-gray-700 mb-1">
-                            {category.issues.length} issue(s) found
-                          </div>
-                          {category.issues.slice(0, 2).map((issue, idx) => (
-                            <div key={idx} className={`text-xs p-2 rounded border-l-4 mb-1 ${
-                              issue.type === 'high' ? 'bg-red-50 border-red-500 text-red-800' :
-                              issue.type === 'medium' ? 'bg-yellow-50 border-yellow-500 text-yellow-800' :
-                              'bg-blue-50 border-blue-500 text-blue-800'
-                            }`}>
-                              {issue.description || 'No description available'}
+                      <div className="mt-3 space-y-2">
+                        {/* Strengths */}
+                        {category.strengths && category.strengths.length > 0 && (
+                          <div>
+                            <div className="text-sm font-medium text-green-700 mb-1">
+                              {category.strengths.length} strength(s) identified
                             </div>
-                          ))}
-                        </div>
-                      )}
+                            {category.strengths.slice(0, 2).map((strength, idx) => (
+                              <div key={idx} className="text-xs p-2 rounded border-l-4 mb-1 bg-green-50 border-green-500 text-green-800">
+                                {strength}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Issues */}
+                        {category.issues && category.issues.length > 0 && (
+                          <div>
+                            <div className="text-sm font-medium text-gray-700 mb-1">
+                              {category.issues.length} issue(s) found
+                            </div>
+                            {category.issues.slice(0, 2).map((issue, idx) => (
+                              <div key={idx} className={`text-xs p-2 rounded border-l-4 mb-1 ${
+                                issue.type === 'high' ? 'bg-red-50 border-red-500 text-red-800' :
+                                issue.type === 'medium' ? 'bg-yellow-50 border-yellow-500 text-yellow-800' :
+                                'bg-blue-50 border-blue-500 text-blue-800'
+                              }`}>
+                                {issue.description || 'No description available'}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -442,52 +496,76 @@ export default function ResultsPage() {
                       </div>
                     )}
 
-                    {category.issues && category.issues.length > 0 && (
-                      <div className="mb-4">
-                        <h4 className="font-medium text-gray-900 mb-2">
-                          🔍 Issues Found ({category.issues.length})
-                          <span className="text-xs text-gray-500 font-normal ml-2">
-                            (HTML structure & usability analysis)
-                          </span>
-                        </h4>
-                        <div className="space-y-2">
-                          {category.issues.map((issue, idx) => (
-                            <div key={idx} className={`p-3 rounded border-l-4 ${
-                              issue.type === 'high' ? 'bg-red-50 border-red-500' :
-                              issue.type === 'medium' ? 'bg-yellow-50 border-yellow-500' :
-                              'bg-blue-50 border-blue-500'
-                            }`}>
-                              <div className="flex items-center justify-between">
-                                <span className={`text-sm font-medium ${
-                                  issue.type === 'high' ? 'text-red-800' :
-                                  issue.type === 'medium' ? 'text-yellow-800' :
-                                  'text-blue-800'
-                                }`}>
-                                  {issue.description || 'No description available'}
-                                </span>
-                                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                  issue.type === 'high' ? 'bg-red-200 text-red-800' :
-                                  issue.type === 'medium' ? 'bg-yellow-200 text-yellow-800' :
-                                  'bg-blue-200 text-blue-800'
-                                }`}>
-                                  {(issue.type || 'unknown').toUpperCase()}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+                      {/* Strengths Section */}
+                      {category.strengths && category.strengths.length > 0 && (
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2">
+                            ✅ Strengths ({category.strengths.length})
+                            <span className="text-xs text-gray-500 font-normal ml-2">
+                              (What's working well)
+                            </span>
+                          </h4>
+                          <div className="space-y-2">
+                            {category.strengths.map((strength, idx) => (
+                              <div key={idx} className="p-3 rounded border-l-4 bg-green-50 border-green-500">
+                                <span className="text-sm font-medium text-green-800">
+                                  {strength}
                                 </span>
                               </div>
-                              {issue.element && (
-                                <div className="text-xs text-gray-600 mt-1">
-                                  Element: <code className="bg-gray-100 px-1 rounded text-xs font-mono">{issue.element}</code>
-                                </div>
-                              )}
-                              {issue.krugPrinciple && (
-                                <div className="text-xs text-blue-600 italic mt-1">
-                                  💡 Principle: {issue.krugPrinciple}
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+
+                      {/* Issues Section */}
+                      {category.issues && category.issues.length > 0 && (
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2">
+                            🔍 Issues Found ({category.issues.length})
+                            <span className="text-xs text-gray-500 font-normal ml-2">
+                              (HTML structure & usability analysis)
+                            </span>
+                          </h4>
+                          <div className="space-y-2">
+                            {category.issues.map((issue, idx) => (
+                              <div key={idx} className={`p-3 rounded border-l-4 ${
+                                issue.type === 'high' ? 'bg-red-50 border-red-500' :
+                                issue.type === 'medium' ? 'bg-yellow-50 border-yellow-500' :
+                                'bg-blue-50 border-blue-500'
+                              }`}>
+                                <div className="flex items-center justify-between">
+                                  <span className={`text-sm font-medium ${
+                                    issue.type === 'high' ? 'text-red-800' :
+                                    issue.type === 'medium' ? 'text-yellow-800' :
+                                    'text-blue-800'
+                                  }`}>
+                                    {issue.description || 'No description available'}
+                                  </span>
+                                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                    issue.type === 'high' ? 'bg-red-200 text-red-800' :
+                                    issue.type === 'medium' ? 'bg-yellow-200 text-yellow-800' :
+                                    'bg-blue-200 text-blue-800'
+                                  }`}>
+                                    {(issue.type || 'unknown').toUpperCase()}
+                                  </span>
+                                </div>
+                                {issue.element && (
+                                  <div className="text-xs text-gray-600 mt-1">
+                                    Element: <code className="bg-gray-100 px-1 rounded text-xs font-mono">{issue.element}</code>
+                                  </div>
+                                )}
+                                {issue.krugPrinciple && (
+                                  <div className="text-xs text-blue-600 italic mt-1">
+                                    💡 Principle: {issue.krugPrinciple}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
                     {category.recommendations && category.recommendations.length > 0 && (
                       <div>
@@ -505,9 +583,11 @@ export default function ResultsPage() {
                               ) : (
                                 <div className="space-y-1">
                                   <p className="font-medium text-gray-900">{rec.action}</p>
-                                  <p className="text-sm text-gray-600">
-                                    <span className="font-medium">Task:</span> {rec.userTask}
-                                  </p>
+                                  {rec.userTask && rec.userTask.trim() && (
+                                    <p className="text-sm text-gray-600">
+                                      <span className="font-medium">Task:</span> {rec.userTask}
+                                    </p>
+                                  )}
                                   {rec.krugReference && (
                                     <p className="text-xs text-blue-600 italic">
                                       Reference: {rec.krugReference}
@@ -544,50 +624,153 @@ export default function ResultsPage() {
             )}
 
             {activeTab === 'recommendations' && (
-              <div className="space-y-6">
+              <div className="space-y-8">
+                {/* Key Strengths Section */}
+                {(() => {
+                  const allStrengths: Array<{strength: string, category: string, score: number}> = []
+                  analysisResult.categories.forEach(category => {
+                    if (category.strengths && category.strengths.length > 0) {
+                      category.strengths.forEach(strength => {
+                        allStrengths.push({ strength, category: category.name, score: category.score || 0 })
+                      })
+                    }
+                  })
+                  
+                  if (allStrengths.length > 0) {
+                    return (
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">🌟 Key Strengths Identified</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                          {allStrengths
+                            .sort((a, b) => b.score - a.score)
+                            .slice(0, 6)
+                            .map(({ strength, category, score }, idx) => (
+                              <div key={idx} className="flex items-start space-x-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                                <div className="flex-1">
+                                  <p className="text-green-900 font-medium text-sm">{strength}</p>
+                                  <div className="flex items-center justify-between mt-1">
+                                    <p className="text-green-700 text-xs">Category: {category}</p>
+                                    <span className="px-2 py-1 bg-green-200 text-green-800 text-xs rounded-full font-medium">
+                                      {score}/100
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )
+                  }
+                  return null
+                })()}
+
+                {/* Priority Implementation Tasks */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Priority Recommendations</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    🎯 Priority Implementation Tasks
+                    <span className="text-sm text-gray-500 font-normal ml-2">
+                      (Contextual tasks based on issues found)
+                    </span>
+                  </h3>
                   <div className="space-y-4">
                     {(() => {
-                      // Get all recommendations from high-scoring categories and high-priority issues
+                      const allTasks: Array<{task: string, category: string, priority: number, issues: number}> = []
+                      
+                      analysisResult.categories.forEach(category => {
+                        if (category.implementationTasks && category.implementationTasks.length > 0) {
+                          const issueCount = category.issues ? category.issues.length : 0
+                          const priority = category.weight + (issueCount * 5) // Weight by category importance and issue count
+                          
+                          category.implementationTasks.forEach(task => {
+                            allTasks.push({ 
+                              task, 
+                              category: category.name, 
+                              priority,
+                              issues: issueCount
+                            })
+                          })
+                        }
+                      })
+                      
+                      return allTasks
+                        .sort((a, b) => b.priority - a.priority)
+                        .slice(0, 8)
+                        .map(({ task, category, issues }, idx) => (
+                          <div key={idx} className="flex items-start space-x-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white text-sm font-bold rounded-full flex items-center justify-center">
+                              {idx + 1}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-blue-900 font-medium">{task.replace(/^\[\s*\]\s*/, '')}</p>
+                              <div className="flex items-center justify-between mt-1">
+                                <p className="text-blue-700 text-sm">Category: {category}</p>
+                                {issues > 0 && (
+                                  <span className="px-2 py-1 bg-blue-200 text-blue-800 text-xs rounded-full font-medium">
+                                    {issues} issue{issues > 1 ? 's' : ''} found
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                    })()}
+                  </div>
+                </div>
+
+                {/* Top Recommendations */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    📋 Top Recommendations
+                    <span className="text-sm text-gray-500 font-normal ml-2">
+                      (Based on Steve Krug's principles)
+                    </span>
+                  </h3>
+                  <div className="space-y-4">
+                    {(() => {
+                      // Get all recommendations from categories with issues
                       const allRecommendations: Array<{rec: any, category: string, priority: number}> = []
                       
                       analysisResult.categories.forEach(category => {
-                        const priority = category.weight // Use weight as priority
-                        if (category.recommendations) {
+                        const issueCount = category.issues ? category.issues.length : 0
+                        const priority = category.weight + (issueCount * 3) // Prioritize categories with more issues
+                        
+                        if (category.recommendations && issueCount > 0) {
                           category.recommendations.forEach(rec => {
                             allRecommendations.push({ rec, category: category.name, priority })
                           })
                         }
                       })
                       
-                      // Sort by priority (weight) and take top 5
+                      // Sort by priority and take top 5
                       return allRecommendations
                         .sort((a, b) => b.priority - a.priority)
                         .slice(0, 5)
                         .map(({ rec, category }, idx) => (
-                          <div key={idx} className="flex items-start space-x-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <div className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white text-sm font-bold rounded-full flex items-center justify-center">
+                          <div key={idx} className="flex items-start space-x-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                            <div className="flex-shrink-0 w-6 h-6 bg-orange-600 text-white text-sm font-bold rounded-full flex items-center justify-center">
                               {idx + 1}
                             </div>
                             <div className="flex-1">
                               {typeof rec === 'string' ? (
                                 <div>
-                                  <p className="text-blue-900 font-medium">{rec}</p>
-                                  <p className="text-blue-700 text-sm mt-1">Category: {category}</p>
+                                  <p className="text-orange-900 font-medium">{rec}</p>
+                                  <p className="text-orange-700 text-sm mt-1">Category: {category}</p>
                                 </div>
                               ) : (
                                 <div>
-                                  <p className="text-blue-900 font-medium">{rec.action}</p>
-                                  <p className="text-blue-700 text-sm mt-1">
-                                    <span className="font-medium">Task:</span> {rec.userTask}
-                                  </p>
-                                  <p className="text-blue-600 text-xs mt-1">
+                                  <p className="text-orange-900 font-medium">{rec.action}</p>
+                                  {rec.userTask && rec.userTask.trim() && (
+                                    <p className="text-orange-700 text-sm mt-1">
+                                      <span className="font-medium">Task:</span> {rec.userTask}
+                                    </p>
+                                  )}
+                                  <p className="text-orange-600 text-xs mt-1">
                                     <span className="font-medium">Category:</span> {category}
                                   </p>
                                   {rec.krugReference && (
-                                    <p className="text-blue-600 text-xs italic mt-1">
-                                      Reference: {rec.krugReference}
+                                    <p className="text-orange-600 text-xs italic mt-1">
+                                      💡 Reference: {rec.krugReference}
                                     </p>
                                   )}
                                 </div>
@@ -599,12 +782,46 @@ export default function ResultsPage() {
                   </div>
                 </div>
 
+                {/* Quick Wins Section */}
                 <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                  <h4 className="font-medium text-green-900 mb-2">💡 Quick Wins</h4>
-                  <p className="text-green-800 text-sm">
-                    Focus on fixing high-priority navigation and content hierarchy issues first. 
-                    These changes typically provide the biggest improvement in user experience with minimal effort.
+                  <h4 className="font-medium text-green-900 mb-2">💡 Quick Wins Strategy</h4>
+                  <p className="text-green-800 text-sm mb-3">
+                    Focus on high-impact, low-effort improvements first. These typically provide the biggest improvement in user experience:
                   </p>
+                  <ul className="text-green-800 text-sm space-y-1">
+                    <li>• Fix navigation clarity and "you are here" indicators</li>
+                    <li>• Add missing alt text to images (accessibility)</li>
+                    <li>• Improve content hierarchy with clear headings</li>
+                    <li>• Optimize form labels and error messages</li>
+                  </ul>
+                </div>
+
+                {/* Implementation Timeline */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                  <h4 className="font-medium text-gray-900 mb-3">🗓️ Suggested Implementation Timeline</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                      <div>
+                        <span className="font-medium text-gray-900">Week 1:</span>
+                        <span className="text-gray-700 text-sm ml-2">High-priority accessibility and navigation fixes</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                      <div>
+                        <span className="font-medium text-gray-900">Week 2-3:</span>
+                        <span className="text-gray-700 text-sm ml-2">Content hierarchy and form improvements</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                      <div>
+                        <span className="font-medium text-gray-900">Week 4+:</span>
+                        <span className="text-gray-700 text-sm ml-2">Mobile optimization and performance enhancements</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
